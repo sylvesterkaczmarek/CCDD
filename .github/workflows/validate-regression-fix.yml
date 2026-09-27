@@ -1,0 +1,39 @@
+name: Validate exact regression fix
+on:
+  push:
+    branches: [validation/csv-key-values-20260927]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['8', '17']
+    env:
+      TEST_JAVA: ${{ matrix.java }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: sylvesterkaczmarek/CCDD
+          ref: ce2db2f63df744c5edcae2ba4a10494a63090e90
+          path: work
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - name: Compile all source and verify CSV regressions
+        run: python3 validation/verify.py work evidence
+      - name: Preserve validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: validation-CCDD-${{ matrix.java }}
+          path: evidence/
